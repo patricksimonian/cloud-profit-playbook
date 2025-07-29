@@ -13,21 +13,27 @@ export const calculateProfitability = (
   // Calculate monthly team capacity (180 hours per person per month)
   const monthlyCapacity = teamConfig.teamSize * 180;
 
-  // Calculate blended hourly rate
-  const l1Rate = (teamConfig.l1OffshoreRate * teamConfig.offshorePercentage / 100) + 
-                 (teamConfig.l1OnshoreRate * (100 - teamConfig.offshorePercentage) / 100);
-  const l2Rate = (teamConfig.l2OffshoreRate * teamConfig.offshorePercentage / 100) + 
-                 (teamConfig.l2OnshoreRate * (100 - teamConfig.offshorePercentage) / 100);
-  const l3Rate = (teamConfig.l3OffshoreRate * teamConfig.offshorePercentage / 100) + 
-                 (teamConfig.l3OnshoreRate * (100 - teamConfig.offshorePercentage) / 100);
+  // Calculate blended hourly rate based on team makeup
+  let totalCost = 0;
+  
+  teamConfig.teamMakeup.forEach(member => {
+    let rate = 0;
+    
+    if (member.level === 'L1') {
+      rate = member.location === 'Offshore' ? teamConfig.l1OffshoreRate : teamConfig.l1OnshoreRate;
+    } else if (member.level === 'L2') {
+      rate = member.location === 'Offshore' ? teamConfig.l2OffshoreRate : teamConfig.l2OnshoreRate;
+    } else if (member.level === 'L3') {
+      rate = member.location === 'Offshore' ? teamConfig.l3OffshoreRate : teamConfig.l3OnshoreRate;
+    }
+    
+    totalCost += rate * 180; // 180 hours per person per month
+  });
+  
+  const blendedHourlyRate = teamConfig.teamSize > 0 ? totalCost / monthlyCapacity : 0;
 
-  const blendedHourlyRate = 
-    (l1Rate * teamConfig.l1Distribution / 100) +
-    (l2Rate * teamConfig.l2Distribution / 100) +
-    (l3Rate * teamConfig.l3Distribution / 100);
-
-  // Calculate team cost (overhead = blended rate × monthly capacity)
-  const teamCost = blendedHourlyRate * monthlyCapacity;
+  // Calculate team cost (direct calculation from team makeup)
+  const teamCost = totalCost;
 
   // Calculate utilization
   const utilizationPercentage = (totalEffort / monthlyCapacity) * 100;

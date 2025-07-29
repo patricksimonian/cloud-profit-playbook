@@ -10,17 +10,21 @@ import { Download, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const defaultTeamConfig: TeamConfiguration = {
-  teamSize: 10,
+  teamSize: 6,
+  teamMakeup: [
+    { level: 'L1', location: 'Offshore' },
+    { level: 'L1', location: 'Offshore' },
+    { level: 'L2', location: 'Offshore' },
+    { level: 'L2', location: 'Onshore' },
+    { level: 'L3', location: 'Offshore' },
+    { level: 'L3', location: 'Onshore' },
+  ],
   l1OffshoreRate: 25,
   l1OnshoreRate: 65,
   l2OffshoreRate: 35,
   l2OnshoreRate: 85,
   l3OffshoreRate: 45,
   l3OnshoreRate: 120,
-  l1Distribution: 50,
-  l2Distribution: 30,
-  l3Distribution: 20,
-  offshorePercentage: 70,
   targetMargin: 15,
 };
 
@@ -88,6 +92,18 @@ const Index = () => {
         </div>
       </div>
 
+      {/* Profitability Dashboard - moved to top */}
+      <div className="mb-8">
+        <div className="flex items-center mb-6">
+          <BarChart3 className="h-6 w-6 mr-2 text-primary" />
+          <h2 className="text-2xl font-bold text-primary">Profitability Analysis</h2>
+        </div>
+        <ProfitabilityDashboard 
+          calculation={calculation} 
+          targetMargin={teamConfig.targetMargin} 
+        />
+      </div>
+
       {/* Dashboard Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
         {/* Configuration Panel */}
@@ -110,18 +126,6 @@ const Index = () => {
             onCustomerMixChange={setCustomerMix}
           />
         </div>
-      </div>
-
-      {/* Profitability Dashboard */}
-      <div className="mb-8">
-        <div className="flex items-center mb-6">
-          <BarChart3 className="h-6 w-6 mr-2 text-primary" />
-          <h2 className="text-2xl font-bold text-primary">Profitability Analysis</h2>
-        </div>
-        <ProfitabilityDashboard 
-          calculation={calculation} 
-          targetMargin={teamConfig.targetMargin} 
-        />
       </div>
     </div>
   );

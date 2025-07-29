@@ -5,18 +5,20 @@ export interface PricingTier {
   price: number;
 }
 
+export interface TeamMember {
+  level: 'L1' | 'L2' | 'L3';
+  location: 'Offshore' | 'Onshore';
+}
+
 export interface TeamConfiguration {
   teamSize: number;
+  teamMakeup: TeamMember[];
   l1OffshoreRate: number;
   l1OnshoreRate: number;
   l2OffshoreRate: number;
   l2OnshoreRate: number;
   l3OffshoreRate: number;
   l3OnshoreRate: number;
-  l1Distribution: number; // percentage
-  l2Distribution: number; // percentage
-  l3Distribution: number; // percentage
-  offshorePercentage: number; // percentage
   targetMargin: number; // percentage
 }
 
