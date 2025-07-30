@@ -10,8 +10,9 @@ export const calculateProfitability = (
   // Calculate total effort required
   const totalEffort = customerMix.reduce((sum, item) => sum + (item.effort * item.quantity), 0);
 
-  // Calculate monthly team capacity (180 hours per person per month)
-  const monthlyCapacity = teamConfig.teamSize * 180;
+  // Calculate monthly team capacity (45 hours per week * 4.33 weeks per month)
+  const hoursPerPersonPerMonth = 45 * 4.33; // ~195 hours per person per month
+  const monthlyCapacity = teamConfig.teamSize * hoursPerPersonPerMonth;
 
   // Calculate blended hourly rate based on team makeup
   let totalCost = 0;
@@ -27,7 +28,7 @@ export const calculateProfitability = (
       rate = member.location === 'Offshore' ? teamConfig.l3OffshoreRate : teamConfig.l3OnshoreRate;
     }
     
-    totalCost += rate * 180; // 180 hours per person per month
+    totalCost += rate * hoursPerPersonPerMonth;
   });
   
   const blendedHourlyRate = teamConfig.teamSize > 0 ? totalCost / monthlyCapacity : 0;
