@@ -53,14 +53,15 @@ export const runSimulation = (
       if (config.onboardingType === 'cadence') {
         // Cadence-based onboarding
         for (let i = 0; i < config.customersPerCadence; i++) {
-          // Select package based on mix
+          // Select package deterministically based on mix percentages
           let selectedPackage = '';
-          let random = Math.random() * 100;
+          let customerIndex = (month - 1) * config.customersPerCadence + i;
+          let selector = customerIndex % 100;
           let cumulative = 0;
           
           for (const mixItem of config.packageMix) {
             cumulative += mixItem.percentage;
-            if (random <= cumulative) {
+            if (selector < cumulative) {
               selectedPackage = mixItem.packageType;
               break;
             }
@@ -140,11 +141,14 @@ export const runSimulation = (
 
     // Handle customer churn
     if (config.enableChurn) {
-      const customersToChurn = customers.filter(c => 
+      const eligibleCustomers = customers.filter(c => 
         !c.churnMonth && 
-        month - c.onboardedMonth >= config.churnAfterMonths &&
-        Math.random() * 100 < config.churnRate
+        month - c.onboardedMonth >= config.churnAfterMonths
       );
+      
+      // Deterministic churn: churn a fixed percentage each month
+      const customersToChurnCount = Math.floor(eligibleCustomers.length * config.churnRate / 100);
+      const customersToChurn = eligibleCustomers.slice(0, customersToChurnCount);
 
       customersToChurn.forEach(customer => {
         customer.churnMonth = month;
