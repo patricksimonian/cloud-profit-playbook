@@ -1,10 +1,15 @@
 import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TeamConfigurationPanel } from "@/components/TeamConfigurationPanel";
-import { PricingTable } from "@/components/PricingTable";
 import { CustomerMixBuilder } from "@/components/CustomerMixBuilder";
+import { PricingTable } from "@/components/PricingTable";
 import { ProfitabilityDashboard } from "@/components/ProfitabilityDashboard";
-import { TeamConfiguration, PricingTier, CustomerMixItem } from "@/types/profitability";
+import { SimulationConfigurator } from "@/components/SimulationConfigurator";
+import { SimulationResults } from "@/components/SimulationResults";
+import { TeamConfiguration, CustomerMixItem, PricingTier } from "@/types/profitability";
+import { OnboardingConfiguration, SimulationResult } from "@/types/simulation";
 import { calculateProfitability } from "@/utils/calculations";
+import { runSimulation } from "@/utils/simulation";
 import { Button } from "@/components/ui/button";
 import { Download, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +51,32 @@ const Index = () => {
   const [customerMix, setCustomerMix] = useState<CustomerMixItem[]>([]);
   const { toast } = useToast();
 
+  // Simulation state
+  const [simulationConfig, setSimulationConfig] = useState<OnboardingConfiguration>({
+    simulationMonths: 24,
+    onboardingType: 'cadence',
+    cadenceMonths: 3,
+    customersPerCadence: 2,
+    packageMix: [
+      { packageType: 'Bronze Small', percentage: 50 },
+      { packageType: 'Silver Medium', percentage: 30 },
+      { packageType: 'Gold Large', percentage: 20 },
+    ],
+    onboardingSchedule: [],
+    enableChurn: false,
+    churnAfterMonths: 12,
+    churnRate: 5,
+    maxCapacityPercentage: 90,
+    autoScaleTeam: false,
+  });
+
+  const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
+
+  const handleRunSimulation = () => {
+    const result = runSimulation(simulationConfig, teamConfig, pricing);
+    setSimulationResult(result);
+  };
+
   const calculation = calculateProfitability(teamConfig, customerMix);
 
   const handleExport = () => {
@@ -54,6 +85,7 @@ const Index = () => {
       pricing,
       customerMix,
       profitability: calculation,
+      simulation: simulationResult,
     };
     
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -92,41 +124,57 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Profitability Dashboard - moved to top */}
-      <div className="mb-8">
-        <div className="flex items-center mb-6">
-          <BarChart3 className="h-6 w-6 mr-2 text-primary" />
-          <h2 className="text-2xl font-bold text-primary">Profitability Analysis</h2>
-        </div>
-        <ProfitabilityDashboard 
-          calculation={calculation} 
-          targetMargin={teamConfig.targetMargin} 
-        />
-      </div>
+      {/* Main Content */}
+      <Tabs defaultValue="profitability" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="profitability">Profitability</TabsTrigger>
+          <TabsTrigger value="team">Team Config</TabsTrigger>
+          <TabsTrigger value="customer-mix">Customer Mix</TabsTrigger>
+          <TabsTrigger value="pricing">Pricing</TabsTrigger>
+          <TabsTrigger value="simulation">Simulation</TabsTrigger>
+        </TabsList>
 
-      {/* Dashboard Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
-        {/* Configuration Panel */}
-        <div className="space-y-6">
+        <TabsContent value="profitability" className="space-y-6">
+          <ProfitabilityDashboard 
+            calculation={calculation}
+            targetMargin={teamConfig.targetMargin}
+          />
+        </TabsContent>
+
+        <TabsContent value="team" className="space-y-6">
           <TeamConfigurationPanel 
             configuration={teamConfig} 
             onConfigurationChange={setTeamConfig} 
           />
-          <PricingTable 
-            pricing={pricing} 
-            onPricingChange={setPricing} 
-          />
-        </div>
+        </TabsContent>
 
-        {/* Customer Mix and Results */}
-        <div className="space-y-6">
+        <TabsContent value="customer-mix" className="space-y-6">
           <CustomerMixBuilder
             pricing={pricing}
             customerMix={customerMix}
             onCustomerMixChange={setCustomerMix}
           />
-        </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="pricing" className="space-y-6">
+          <PricingTable 
+            pricing={pricing} 
+            onPricingChange={setPricing} 
+          />
+        </TabsContent>
+
+        <TabsContent value="simulation" className="space-y-6">
+          <SimulationConfigurator
+            configuration={simulationConfig}
+            onConfigurationChange={setSimulationConfig}
+            pricingTiers={pricing}
+            onRunSimulation={handleRunSimulation}
+          />
+          {simulationResult && (
+            <SimulationResults result={simulationResult} />
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
