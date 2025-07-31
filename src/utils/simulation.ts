@@ -12,6 +12,7 @@ export const runSimulation = (
   pricingTiers: PricingTier[]
 ): SimulationResult => {
   console.log("sim running");
+  console.log("latest pricin tiers", pricingTiers);
   const customers: CustomerInstance[] = [];
   const monthlyResults: MonthlySimulationResult[] = [];
   let cumulativeProfit = 0;
@@ -29,7 +30,7 @@ export const runSimulation = (
     for (let i = 0; i < teamSize; i++) {
       const memberIndex = i % teamConfig.teamMakeup.length;
       const member = teamConfig.teamMakeup[memberIndex];
-      console.log("checking member", member);
+
       let rate = 0;
       if (member.level === "L1") {
         rate =
