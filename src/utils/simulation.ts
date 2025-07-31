@@ -1,4 +1,9 @@
-import { OnboardingConfiguration, CustomerInstance, MonthlySimulationResult, SimulationResult } from "@/types/simulation";
+import {
+  OnboardingConfiguration,
+  CustomerInstance,
+  MonthlySimulationResult,
+  SimulationResult,
+} from "@/types/simulation";
 import { TeamConfiguration, PricingTier } from "@/types/profitability";
 
 export const runSimulation = (
@@ -6,6 +11,7 @@ export const runSimulation = (
   teamConfig: TeamConfiguration,
   pricingTiers: PricingTier[]
 ): SimulationResult => {
+  console.log("sim running");
   const customers: CustomerInstance[] = [];
   const monthlyResults: MonthlySimulationResult[] = [];
   let cumulativeProfit = 0;
@@ -13,8 +19,8 @@ export const runSimulation = (
   let autoScaleTriggered = false;
   let currentTeamSize = teamConfig.teamSize;
 
-  // Calculate hourly rate and monthly capacity
-  const hoursPerPersonPerMonth = 45 * 4.33;
+  // Calculate hourly rate and monthly capacity max 180 hours per month
+  const hoursPerPersonPerMonth = 180;
   let monthlyCapacity = currentTeamSize * hoursPerPersonPerMonth;
 
   // Calculate team cost per month
@@ -23,16 +29,25 @@ export const runSimulation = (
     for (let i = 0; i < teamSize; i++) {
       const memberIndex = i % teamConfig.teamMakeup.length;
       const member = teamConfig.teamMakeup[memberIndex];
-      
+      console.log("checking member", member);
       let rate = 0;
-      if (member.level === 'L1') {
-        rate = member.location === 'Offshore' ? teamConfig.l1OffshoreRate : teamConfig.l1OnshoreRate;
-      } else if (member.level === 'L2') {
-        rate = member.location === 'Offshore' ? teamConfig.l2OffshoreRate : teamConfig.l2OnshoreRate;
-      } else if (member.level === 'L3') {
-        rate = member.location === 'Offshore' ? teamConfig.l3OffshoreRate : teamConfig.l3OnshoreRate;
+      if (member.level === "L1") {
+        rate =
+          member.location === "Offshore"
+            ? teamConfig.l1OffshoreRate
+            : teamConfig.l1OnshoreRate;
+      } else if (member.level === "L2") {
+        rate =
+          member.location === "Offshore"
+            ? teamConfig.l2OffshoreRate
+            : teamConfig.l2OnshoreRate;
+      } else if (member.level === "L3") {
+        rate =
+          member.location === "Offshore"
+            ? teamConfig.l3OffshoreRate
+            : teamConfig.l3OnshoreRate;
       }
-      
+
       totalCost += rate * hoursPerPersonPerMonth;
     }
     return totalCost;
@@ -43,22 +58,23 @@ export const runSimulation = (
     let customersChurned = 0;
 
     // Handle customer onboarding
-    const shouldOnboard = config.onboardingType === 'cadence' 
-      ? month % config.cadenceMonths === 0
-      : config.onboardingSchedule.some(item => item.month === month);
+    const shouldOnboard =
+      config.onboardingType === "cadence"
+        ? month % config.cadenceMonths === 0
+        : config.onboardingSchedule.some((item) => item.month === month);
 
     if (shouldOnboard) {
       let newCustomers: CustomerInstance[] = [];
 
-      if (config.onboardingType === 'cadence') {
+      if (config.onboardingType === "cadence") {
         // Cadence-based onboarding
         for (let i = 0; i < config.customersPerCadence; i++) {
           // Select package deterministically based on mix percentages
-          let selectedPackage = '';
+          let selectedPackage = "";
           let customerIndex = (month - 1) * config.customersPerCadence + i;
           let selector = customerIndex % 100;
           let cumulative = 0;
-          
+
           for (const mixItem of config.packageMix) {
             cumulative += mixItem.percentage;
             if (selector < cumulative) {
@@ -67,7 +83,9 @@ export const runSimulation = (
             }
           }
 
-          const pricing = pricingTiers.find(p => `${p.tier} ${p.complexity}` === selectedPackage);
+          const pricing = pricingTiers.find(
+            (p) => `${p.tier} ${p.complexity}` === selectedPackage
+          );
           if (pricing) {
             newCustomers.push({
               id: `customer-${month}-${i}`,
@@ -80,9 +98,13 @@ export const runSimulation = (
         }
       } else {
         // Schedule-based onboarding
-        const scheduleItems = config.onboardingSchedule.filter(item => item.month === month);
+        const scheduleItems = config.onboardingSchedule.filter(
+          (item) => item.month === month
+        );
         scheduleItems.forEach((item, index) => {
-          const pricing = pricingTiers.find(p => `${p.tier} ${p.complexity}` === item.packageType);
+          const pricing = pricingTiers.find(
+            (p) => `${p.tier} ${p.complexity}` === item.packageType
+          );
           if (pricing) {
             for (let i = 0; i < item.quantity; i++) {
               newCustomers.push({
@@ -99,12 +121,16 @@ export const runSimulation = (
 
       // Check capacity before onboarding
       const currentEffort = customers
-        .filter(c => !c.churnMonth || c.churnMonth >= month)
+        .filter((c) => !c.churnMonth || c.churnMonth >= month)
         .reduce((sum, c) => sum + c.monthlyEffort, 0);
-      
-      const newEffort = newCustomers.reduce((sum, c) => sum + c.monthlyEffort, 0);
+
+      const newEffort = newCustomers.reduce(
+        (sum, c) => sum + c.monthlyEffort,
+        0
+      );
       const totalEffortAfterOnboarding = currentEffort + newEffort;
-      const capacityAfterOnboarding = (totalEffortAfterOnboarding / monthlyCapacity) * 100;
+      const capacityAfterOnboarding =
+        (totalEffortAfterOnboarding / monthlyCapacity) * 100;
 
       if (capacityAfterOnboarding <= config.maxCapacityPercentage) {
         // Can onboard all customers
@@ -113,7 +139,9 @@ export const runSimulation = (
       } else if (config.autoScaleTeam) {
         // Auto-scale team
         const requiredCapacity = totalEffortAfterOnboarding;
-        const requiredTeamSize = Math.ceil(requiredCapacity / hoursPerPersonPerMonth);
+        const requiredTeamSize = Math.ceil(
+          requiredCapacity / hoursPerPersonPerMonth
+        );
         currentTeamSize = requiredTeamSize;
         monthlyCapacity = currentTeamSize * hoursPerPersonPerMonth;
         customers.push(...newCustomers);
@@ -121,7 +149,9 @@ export const runSimulation = (
         autoScaleTriggered = true;
       } else {
         // Partial onboarding up to capacity limit
-        const availableCapacity = (monthlyCapacity * config.maxCapacityPercentage / 100) - currentEffort;
+        const availableCapacity =
+          (monthlyCapacity * config.maxCapacityPercentage) / 100 -
+          currentEffort;
         let partialCustomers: CustomerInstance[] = [];
         let usedCapacity = 0;
 
@@ -141,26 +171,40 @@ export const runSimulation = (
 
     // Handle customer churn
     if (config.enableChurn) {
-      const eligibleCustomers = customers.filter(c => 
-        !c.churnMonth && 
-        month - c.onboardedMonth >= config.churnAfterMonths
+      const eligibleCustomers = customers.filter(
+        (c) =>
+          !c.churnMonth && month - c.onboardedMonth >= config.churnAfterMonths
       );
-      
-      // Deterministic churn: churn a fixed percentage each month
-      const customersToChurnCount = Math.floor(eligibleCustomers.length * config.churnRate / 100);
-      const customersToChurn = eligibleCustomers.slice(0, customersToChurnCount);
 
-      customersToChurn.forEach(customer => {
+      // Deterministic churn: churn a fixed percentage each month
+      const customersToChurnCount = Math.floor(
+        (eligibleCustomers.length * config.churnRate) / 100
+      );
+      const customersToChurn = eligibleCustomers.slice(
+        0,
+        customersToChurnCount
+      );
+
+      customersToChurn.forEach((customer) => {
         customer.churnMonth = month;
         customersChurned++;
       });
     }
 
     // Calculate monthly metrics
-    const activeCustomers = customers.filter(c => !c.churnMonth || c.churnMonth >= month);
-    const totalRevenue = activeCustomers.reduce((sum, c) => sum + c.monthlyRevenue, 0);
-    const totalEffort = activeCustomers.reduce((sum, c) => sum + c.monthlyEffort, 0);
+    const activeCustomers = customers.filter(
+      (c) => !c.churnMonth || c.churnMonth >= month
+    );
+    const totalRevenue = activeCustomers.reduce(
+      (sum, c) => sum + c.monthlyRevenue,
+      0
+    );
+    const totalEffort = activeCustomers.reduce(
+      (sum, c) => sum + c.monthlyEffort,
+      0
+    );
     const teamCost = calculateMonthlyCost(currentTeamSize);
+    console.log("team cost!", teamCost);
     const profit = totalRevenue - teamCost;
     cumulativeProfit += profit;
 
@@ -170,7 +214,8 @@ export const runSimulation = (
     }
 
     const capacityUsedPercentage = (totalEffort / monthlyCapacity) * 100;
-    const isOverCapacity = capacityUsedPercentage > config.maxCapacityPercentage;
+    const isOverCapacity =
+      capacityUsedPercentage > config.maxCapacityPercentage;
 
     monthlyResults.push({
       month,
@@ -192,9 +237,11 @@ export const runSimulation = (
     monthlyResults,
     breakevenMonth,
     totalCustomersOnboarded: customers.length,
-    totalCustomersChurned: customers.filter(c => c.churnMonth).length,
+    totalCustomersChurned: customers.filter((c) => c.churnMonth).length,
     finalProfit: cumulativeProfit,
-    maxCapacityReached: Math.max(...monthlyResults.map(r => r.capacityUsedPercentage)),
+    maxCapacityReached: Math.max(
+      ...monthlyResults.map((r) => r.capacityUsedPercentage)
+    ),
     autoScaleTriggered,
   };
 };

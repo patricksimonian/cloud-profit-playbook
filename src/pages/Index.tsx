@@ -6,7 +6,11 @@ import { PricingTable } from "@/components/PricingTable";
 import { ProfitabilityDashboard } from "@/components/ProfitabilityDashboard";
 import { SimulationConfigurator } from "@/components/SimulationConfigurator";
 import { SimulationResults } from "@/components/SimulationResults";
-import { TeamConfiguration, CustomerMixItem, PricingTier } from "@/types/profitability";
+import {
+  TeamConfiguration,
+  CustomerMixItem,
+  PricingTier,
+} from "@/types/profitability";
 import { OnboardingConfiguration, SimulationResult } from "@/types/simulation";
 import { calculateProfitability } from "@/utils/calculations";
 import { runSimulation } from "@/utils/simulation";
@@ -17,19 +21,19 @@ import { useToast } from "@/hooks/use-toast";
 const defaultTeamConfig: TeamConfiguration = {
   teamSize: 6,
   teamMakeup: [
-    { level: 'L1', location: 'Offshore' },
-    { level: 'L1', location: 'Offshore' },
-    { level: 'L2', location: 'Offshore' },
-    { level: 'L2', location: 'Onshore' },
-    { level: 'L3', location: 'Offshore' },
-    { level: 'L3', location: 'Onshore' },
+    { level: "L1", location: "Offshore" },
+    { level: "L1", location: "Offshore" },
+    { level: "L2", location: "Offshore" },
+    { level: "L2", location: "Onshore" },
+    { level: "L3", location: "Offshore" },
+    { level: "L3", location: "Onshore" },
   ],
-  l1OffshoreRate: 25,
-  l1OnshoreRate: 65,
-  l2OffshoreRate: 35,
-  l2OnshoreRate: 85,
+  l1OffshoreRate: 55,
+  l1OnshoreRate: 143,
+  l2OffshoreRate: 77,
+  l2OnshoreRate: 196,
   l3OffshoreRate: 45,
-  l3OnshoreRate: 120,
+  l3OnshoreRate: 131,
   targetMargin: 15,
 };
 
@@ -46,31 +50,34 @@ const defaultPricing: PricingTier[] = [
 ];
 
 const Index = () => {
-  const [teamConfig, setTeamConfig] = useState<TeamConfiguration>(defaultTeamConfig);
+  const [teamConfig, setTeamConfig] =
+    useState<TeamConfiguration>(defaultTeamConfig);
   const [pricing, setPricing] = useState<PricingTier[]>(defaultPricing);
   const [customerMix, setCustomerMix] = useState<CustomerMixItem[]>([]);
   const { toast } = useToast();
 
   // Simulation state
-  const [simulationConfig, setSimulationConfig] = useState<OnboardingConfiguration>({
-    simulationMonths: 24,
-    onboardingType: 'cadence',
-    cadenceMonths: 3,
-    customersPerCadence: 2,
-    packageMix: [
-      { packageType: 'Bronze Small', percentage: 50 },
-      { packageType: 'Silver Medium', percentage: 30 },
-      { packageType: 'Gold Large', percentage: 20 },
-    ],
-    onboardingSchedule: [],
-    enableChurn: false,
-    churnAfterMonths: 12,
-    churnRate: 5,
-    maxCapacityPercentage: 90,
-    autoScaleTeam: false,
-  });
+  const [simulationConfig, setSimulationConfig] =
+    useState<OnboardingConfiguration>({
+      simulationMonths: 24,
+      onboardingType: "cadence",
+      cadenceMonths: 3,
+      customersPerCadence: 2,
+      packageMix: [
+        { packageType: "Bronze Small", percentage: 50 },
+        { packageType: "Silver Medium", percentage: 30 },
+        { packageType: "Gold Large", percentage: 20 },
+      ],
+      onboardingSchedule: [],
+      enableChurn: false,
+      churnAfterMonths: 12,
+      churnRate: 5,
+      maxCapacityPercentage: 90,
+      autoScaleTeam: false,
+    });
 
-  const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
+  const [simulationResult, setSimulationResult] =
+    useState<SimulationResult | null>(null);
 
   const handleRunSimulation = () => {
     const result = runSimulation(simulationConfig, teamConfig, pricing);
@@ -87,15 +94,17 @@ const Index = () => {
       profitability: calculation,
       simulation: simulationResult,
     };
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'profitability-analysis.json';
+    a.download = "profitability-analysis.json";
     a.click();
     URL.revokeObjectURL(url);
-    
+
     toast({
       title: "Export Complete",
       description: "Profitability analysis exported successfully",
@@ -116,7 +125,11 @@ const Index = () => {
             </p>
           </div>
           <div className="flex space-x-2">
-            <Button onClick={handleExport} variant="outline" className="bg-card/50">
+            <Button
+              onClick={handleExport}
+              variant="outline"
+              className="bg-card/50"
+            >
               <Download className="h-4 w-4 mr-2" />
               Export Analysis
             </Button>
@@ -135,16 +148,16 @@ const Index = () => {
         </TabsList>
 
         <TabsContent value="profitability" className="space-y-6">
-          <ProfitabilityDashboard 
+          <ProfitabilityDashboard
             calculation={calculation}
             targetMargin={teamConfig.targetMargin}
           />
         </TabsContent>
 
         <TabsContent value="team" className="space-y-6">
-          <TeamConfigurationPanel 
-            configuration={teamConfig} 
-            onConfigurationChange={setTeamConfig} 
+          <TeamConfigurationPanel
+            configuration={teamConfig}
+            onConfigurationChange={setTeamConfig}
           />
         </TabsContent>
 
@@ -157,10 +170,7 @@ const Index = () => {
         </TabsContent>
 
         <TabsContent value="pricing" className="space-y-6">
-          <PricingTable 
-            pricing={pricing} 
-            onPricingChange={setPricing} 
-          />
+          <PricingTable pricing={pricing} onPricingChange={setPricing} />
         </TabsContent>
 
         <TabsContent value="simulation" className="space-y-6">
@@ -170,9 +180,7 @@ const Index = () => {
             pricingTiers={pricing}
             onRunSimulation={handleRunSimulation}
           />
-          {simulationResult && (
-            <SimulationResults result={simulationResult} />
-          )}
+          {simulationResult && <SimulationResults result={simulationResult} />}
         </TabsContent>
       </Tabs>
     </div>
